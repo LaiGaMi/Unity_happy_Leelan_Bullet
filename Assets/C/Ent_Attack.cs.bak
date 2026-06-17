@@ -1,0 +1,55 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Ent_Attack : MonoBehaviour
+{
+	[Header("攻擊預置物")]
+    public GameObject attackPrefab;
+
+    [Header("攻擊生成位置")]
+    public Transform firePoint;
+
+    [Header("開始攻擊延遲")]
+    public float startDelay = 2f;
+
+    [Header("攻擊間隔")]
+    public float attackInterval = 1f;
+
+    private bool isAttacking;
+	
+    // Start is called before the first frame update
+    void Start()
+    {
+        StartCoroutine(AttackLoop());
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+	
+	IEnumerator AttackLoop()
+    {
+        // 等待開始時間
+        yield return new WaitForSeconds(startDelay);
+
+        isAttacking = true;
+
+        while (isAttacking)
+        {
+            SpawnAttack();
+            yield return new WaitForSeconds(attackInterval);
+        }
+    }
+
+    void SpawnAttack()
+    {
+        if (attackPrefab == null) return;
+
+        Vector3 spawnPos = firePoint != null ? firePoint.position : transform.position;
+
+        Instantiate(attackPrefab, spawnPos, Quaternion.identity);
+    }
+}

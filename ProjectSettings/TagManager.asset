@@ -3,7 +3,13 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - player_attack
+  - Ent_Attack
+  - Ent_Attack_NO
+  - Laser
+  - Enemy
+  - Boss_Spawn
   layers:
   - Default
   - TransparentFX

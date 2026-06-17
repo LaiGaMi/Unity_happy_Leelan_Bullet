@@ -1,0 +1,25 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Ent_Move : MonoBehaviour
+{
+	public float disableX = -10f;
+
+    private ConstantForce2D force2D;
+	
+    // Start is called before the first frame update
+    void Start()
+    {
+        force2D = GetComponent<ConstantForce2D>();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (transform.position.x < disableX)
+        {
+            force2D.enabled = false;
+        }
+    }
+}

@@ -1,0 +1,271 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using EasyTransition;
+
+public class Boss_HP : MonoBehaviour
+{
+	[Header("最大血量")]
+    public int hp = 999;
+
+    [Header("血條UI（Image Fill）")]
+    public Image hpBar;
+
+    [Header("受傷顏色")]
+    public Color hurtColor = Color.red;
+
+    [Header("受傷持續時間")]
+    public float hurtDuration = 0.05f;
+
+    [Header("死亡特效預置物")]
+    public GameObject deathEffectPrefab;
+
+    private SpriteRenderer spriteRenderer;
+    private Color originalColor;
+
+    private int maxHp;
+
+    private enum BossPhase { Phase1, Phase2, Phase3 }
+    private BossPhase currentPhase;
+
+    [Header("手1（攻擊手）")]
+    public BossHand hand1;
+
+    [Header("手2（防禦手）")]
+    public BossHand hand2;
+
+    // =========================
+    // ⭐ 移動
+    // =========================
+    [Header("移動開關")]
+    public bool enableMove = false;
+
+    [Header("移動速度")]
+    public float moveSpeed = 3f;
+
+    [Header("移動曲線")]
+    public AnimationCurve moveCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+
+    [Header("移動範圍縮小比例（0~1）")]
+    public float moveAreaScale = 0.7f;
+
+    [Header("移動間隔時間")]
+    public float moveInterval = 1f;
+
+    private Camera cam;
+
+    private Vector3 targetPos;
+    private bool hasTarget;
+    private float moveTimer;
+    private float moveDuration;
+    private bool waiting;
+
+    private float moveStuckTimer;
+    public float moveStuckLimit = 5f;
+
+    // =========================
+    // ⭐ 召喚（改版：單一物件）
+    // =========================
+    [Header("召喚開關（Phase2用）")]
+    public bool enableSpawnObject = false;
+
+    [Header("召喚物（場景中已存在）")]
+    public GameObject spawnObject;
+	
+	// 場景名稱
+    public string sceneName;
+    // 改成拖這個
+    public TransitionSettings transitionSettings;
+	public float loadDelay = 0f;
+	
+    void Start()
+    {
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        originalColor = spriteRenderer.color;
+
+        maxHp = hp;
+        cam = Camera.main;
+
+        UpdateHPBar();
+        SetPhase(BossPhase.Phase1);
+    }
+
+    void Update()
+    {
+        CheckPhase();
+
+        if (enableMove)
+            HandleMovement();
+
+        if (moveStuckTimer > moveStuckLimit)
+            ResetMoveState();
+    }
+
+    // =========================
+    // ⭐ Phase
+    // =========================
+    void CheckPhase()
+    {
+        float ratio = (float)hp / maxHp;
+
+        if (ratio > 0.66f)
+        {
+            if (currentPhase != BossPhase.Phase1)
+                SetPhase(BossPhase.Phase1);
+        }
+        else if (ratio > 0.33f)
+        {
+            if (currentPhase != BossPhase.Phase2)
+                SetPhase(BossPhase.Phase2);
+        }
+        else
+        {
+            if (currentPhase != BossPhase.Phase3)
+                SetPhase(BossPhase.Phase3);
+        }
+    }
+
+    void SetPhase(BossPhase phase)
+    {
+        currentPhase = phase;
+
+        switch (phase)
+        {
+            case BossPhase.Phase1:
+                hand1.SetAttack();
+                hand2.SetDefense();
+
+                enableMove = true;
+                break;
+
+            case BossPhase.Phase2:
+				hand1.SetAttack();
+                hand2.SetDefense();
+
+                enableMove = true;
+				enableSpawnObject = true;
+                spawnObject.SetActive(true);
+                break;
+
+            case BossPhase.Phase3:
+                hand1.SetAttack();
+                hand2.SetAttack();
+
+                enableMove = true;
+				enableSpawnObject = false;
+                spawnObject.SetActive(false);
+                break;
+        }
+
+        ResetMoveState();
+    }
+
+    // =========================
+    // ⭐ 移動
+    // =========================
+    void HandleMovement()
+    {
+        if (cam == null || waiting) return;
+
+        if (!hasTarget)
+        {
+            float h = cam.orthographicSize;
+            float w = h * cam.aspect;
+
+            Vector3 c = cam.transform.position;
+
+            float halfW = w * moveAreaScale;
+            float halfH = h * moveAreaScale;
+
+            targetPos = new Vector3(
+                Random.Range(c.x, c.x + halfW),
+                Random.Range(c.y - halfH, c.y + halfH),
+                transform.position.z
+            );
+
+            moveTimer = 0f;
+            moveDuration = Mathf.Max(0.1f,
+                Vector3.Distance(transform.position, targetPos) / moveSpeed);
+
+            hasTarget = true;
+            moveStuckTimer = 0f;
+        }
+
+        moveTimer += Time.deltaTime;
+
+        float t = moveTimer / moveDuration;
+        float curveT = moveCurve.Evaluate(Mathf.Clamp01(t));
+
+        transform.position = Vector3.Lerp(transform.position, targetPos, curveT);
+
+        if (t >= 1f)
+        {
+            hasTarget = false;
+            StartCoroutine(MoveInterval());
+        }
+    }
+
+    IEnumerator MoveInterval()
+    {
+        waiting = true;
+        yield return new WaitForSeconds(moveInterval);
+        waiting = false;
+    }
+
+    void ResetMoveState()
+    {
+        hasTarget = false;
+        waiting = false;
+        moveTimer = 0f;
+        moveStuckTimer = 0f;
+    }
+
+    // =========================
+    // ⭐ HP
+    // =========================
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (!other.CompareTag("player_attack"))
+            return;
+
+        hp--;
+
+        Destroy(other.gameObject);
+
+        StartCoroutine(HurtFlash());
+        UpdateHPBar();
+
+        if (hp <= 0)
+            Die();
+    }
+
+    void UpdateHPBar()
+    {
+        if (hpBar != null)
+            hpBar.fillAmount = (float)hp / maxHp;
+    }
+
+    void Die()
+    {
+        if (deathEffectPrefab != null)
+            Instantiate(deathEffectPrefab, transform.position, Quaternion.identity);
+		
+		
+		EndGame();
+
+        Destroy(gameObject);
+    }
+
+    IEnumerator HurtFlash()
+    {
+        spriteRenderer.color = hurtColor;
+        yield return new WaitForSeconds(hurtDuration);
+        spriteRenderer.color = originalColor;
+    }
+	
+	void EndGame()
+    {
+        TransitionManager.Instance().Transition(sceneName, transitionSettings, loadDelay);
+    }
+}

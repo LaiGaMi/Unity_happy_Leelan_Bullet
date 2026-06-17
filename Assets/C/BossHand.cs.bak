@@ -1,0 +1,225 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class BossHand : MonoBehaviour
+{
+    public enum HandState { Attack, Defense }
+    public HandState state;
+
+    private bool defenseEnabled;
+    private bool attackEnabled;
+
+    [Header("血量")]
+    public int hp = 30;
+
+    [Header("防禦特效")]
+    public GameObject defenseEffect;
+
+    [Header("死亡特效")]
+    public GameObject deathEffect;
+
+    [Header("冷卻重啟時間")]
+    public float reviveTime = 10f;
+
+    private GameObject boss;
+    private BoxCollider2D box;
+    private Camera cam;
+    private Transform player;
+
+    // attack control
+    private Coroutine attackRoutine;
+
+    private int lastAttack = -1;
+
+    void Awake()
+    {
+        box = GetComponent<BoxCollider2D>();
+        boss = GameObject.Find("Boss_B");
+        cam = Camera.main;
+
+        GameObject p = GameObject.Find("Player");
+        if (p != null) player = p.transform;
+    }
+
+    void Update()
+    {
+        if (defenseEnabled && boss != null)
+            transform.position = boss.transform.position;
+    }
+
+    // =========================
+    // ⭐ 攻擊（修正：不再用 string Stop）
+    // =========================
+    public void SetAttack()
+    {
+        state = HandState.Attack;
+
+        attackEnabled = true;
+        defenseEnabled = false;
+
+        if (defenseEffect != null)
+            defenseEffect.SetActive(false);
+
+        if (box != null)
+            box.enabled = false;
+
+        if (attackRoutine != null)
+            StopCoroutine(attackRoutine);
+
+        attackRoutine = StartCoroutine(AttackLoop());
+    }
+
+    IEnumerator AttackLoop()
+    {
+        while (attackEnabled)
+        {
+            int index = GetRandomAttack();
+            yield return ExecuteAttack(index);
+        }
+    }
+
+    int GetRandomAttack()
+    {
+        int r;
+        do { r = Random.Range(0, 3); }
+        while (r == lastAttack);
+
+        lastAttack = r;
+        return r;
+    }
+
+    IEnumerator ExecuteAttack(int type)
+    {
+        switch (type)
+        {
+            case 0: yield return AttackType1(); break;
+            case 1: yield return AttackType2(); break;
+            case 2: yield return AttackType3(); break;
+        }
+    }
+
+    IEnumerator AttackType1()
+    {
+        if (player == null) yield break;
+
+        Vector2 target = (Vector2)player.position + Random.insideUnitCircle * 2f;
+        yield return MoveTo(target);
+
+        yield return new WaitForSeconds(0.1f);
+    }
+
+    IEnumerator AttackType2()
+    {
+        if (player == null || boss == null) yield break;
+
+        Vector2 target = boss.transform.position;
+        yield return MoveTo(target);
+
+        yield return new WaitForSeconds(0.1f);
+    }
+
+    IEnumerator AttackType3()
+    {
+        if (player == null) yield break;
+
+        Vector2 dir = (player.position - transform.position).normalized;
+
+        float time = 0f;
+
+        while (time < 2f)
+        {
+            transform.position += (Vector3)dir * 5f * Time.deltaTime;
+            time += Time.deltaTime;
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(0.5f);
+    }
+
+    IEnumerator MoveTo(Vector2 target)
+    {
+        while (Vector2.Distance(transform.position, target) > 0.1f)
+        {
+            transform.position = Vector2.MoveTowards(
+                transform.position,
+                target,
+                5f * Time.deltaTime
+            );
+
+            yield return null;
+        }
+    }
+
+    // =========================
+    // ⭐ 防禦（修正關鍵）
+    // =========================
+    public void SetDefense()
+    {
+        state = HandState.Defense;
+
+        attackEnabled = false;
+
+        if (attackRoutine != null)
+        {
+            StopCoroutine(attackRoutine);
+            attackRoutine = null;
+        }
+
+        defenseEnabled = true;
+
+        hp = 30;
+
+        if (defenseEffect != null)
+            defenseEffect.SetActive(true);
+
+        if (box != null)
+            box.enabled = true;
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (!defenseEnabled) return;
+        if (!other.CompareTag("player_attack")) return;
+
+        hp--;
+        Destroy(other.gameObject);
+
+        if (hp <= 0)
+        {
+            StartCoroutine(DieAndRespawn());
+        }
+    }
+
+    IEnumerator DieAndRespawn()
+    {
+        defenseEnabled = false;
+        attackEnabled = false;
+
+        if (attackRoutine != null)
+        {
+            StopCoroutine(attackRoutine);
+            attackRoutine = null;
+        }
+
+        if (defenseEffect != null)
+            defenseEffect.SetActive(false);
+
+        if (box != null)
+            box.enabled = false;
+
+        Vector3 pos = transform.position;
+
+        if (deathEffect != null)
+            Instantiate(deathEffect, pos, Quaternion.identity);
+
+        transform.position = new Vector3(9999, 9999, 0);
+
+        yield return new WaitForSeconds(reviveTime);
+
+        SetDefense();
+    }
+
+    public void SetStateAttack() => SetAttack();
+    public void SetStateDefense() => SetDefense();
+}

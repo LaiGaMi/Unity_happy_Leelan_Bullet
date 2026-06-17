@@ -1,0 +1,23 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class BackGround : MonoBehaviour
+{
+	public float moveSpeed = 5f;
+    public float width = 20f; // 背景實際寬度
+
+    void Update()
+    {
+        // 移動
+        transform.position += Vector3.left * moveSpeed * Time.deltaTime;
+
+        // 超出左邊界 → 移到右邊
+        if (transform.position.x <= -width)
+        {
+            Vector3 pos = transform.position;
+            pos.x += width * 2f;
+            transform.position = pos;
+        }
+    }
+}
