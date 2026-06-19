@@ -55,9 +55,24 @@ public class BossHand : MonoBehaviour
     [Header("隨機範圍")]
     public float playerRadius = 2f;
     public float bossRadius = 2f;
+	
+	[Header("Attack1內圈半徑(禁止區)")]
+    public float attack1MinRadius = 1f;
+
+    [Header("Attack1外圈半徑(最大範圍)")]
+    public float attack1MaxRadius = 4f;
 
     [Header("攝影機內縮")]
     public float cameraInset = 1f;
+	
+	[Header("Attack1旋轉時間(秒)")]
+    public float attack1RotateTime = 1f;
+
+    [Header("Attack1旋轉圈數")]
+    public float attack1RotateTurns = 1f;
+
+    [Header("Attack1發射數量")]
+    public int attack1FireCount = 10;
 
     private Camera cam;
     private Transform player;
@@ -142,13 +157,57 @@ public class BossHand : MonoBehaviour
     {
         if (player == null) yield break;
 
-        Vector2 target = (Vector2)player.position +
-                         Random.insideUnitCircle * playerRadius;
+        Vector2 dir = Random.insideUnitCircle.normalized;
+
+        float radius = Random.Range(attack1MinRadius, attack1MaxRadius);
+
+        Vector2 target =
+            (Vector2)player.position + dir * radius;
 
         yield return MoveTo(target);
 
-        if (attack1Prefab != null)
-            Instantiate(attack1Prefab, transform.position, Quaternion.identity);
+        float startZ = 0f;
+        transform.rotation = Quaternion.Euler(0, 0, startZ);
+
+        float timer = 0f;
+        float interval = attack1RotateTime / attack1FireCount;
+        float totalRotation = 360f * attack1RotateTurns;
+
+        int fired = 0;
+		
+		yield return new WaitForSeconds(0.5f);
+		
+        while (timer < attack1RotateTime)
+        {
+            timer += Time.deltaTime;
+
+            float t = timer / attack1RotateTime;
+            float angle = Mathf.Lerp(0f, totalRotation, t);
+
+            transform.rotation = Quaternion.Euler(0, 0, angle);
+
+            if (fired < attack1FireCount && timer >= interval * fired)
+            {
+                if (attack1Prefab != null)
+                {
+                    Instantiate(
+                        attack1Prefab,
+                        transform.position,
+                        transform.rotation
+                    );
+                }
+
+                fired++;
+            }
+
+            yield return null;
+        }
+
+        transform.rotation = Quaternion.Euler(0, 0, 0);
+
+        // =========================
+        // ⭐ 修改處 END
+        // =========================
 
         yield return new WaitForSeconds(attackWaitTime);
     }
@@ -164,6 +223,8 @@ public class BossHand : MonoBehaviour
 
         Vector2 dir = (player.position - transform.position).normalized;
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+		
+		yield return new WaitForSeconds(0.5f);
 
         if (attack2Prefab != null)
             Instantiate(attack2Prefab, transform.position,
@@ -198,11 +259,11 @@ public class BossHand : MonoBehaviour
                             Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg));
             }
 
-            transform.position += (Vector3)dir * moveSpeed * Time.deltaTime;
+            transform.position += (Vector3)dir * moveSpeed * 2 * Time.deltaTime;
             yield return null;
         }
 
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSeconds(1.5f);
 
         if (boss != null)
             transform.position = boss.transform.position;

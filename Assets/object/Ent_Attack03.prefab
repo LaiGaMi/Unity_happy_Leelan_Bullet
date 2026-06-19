@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 745834738220305845}
   m_Layer: 0
   m_Name: Ent_Attack03
-  m_TagString: Ent_Attack_NO
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4925,13 +4925,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9aa4507ec671264ba15918a967f1550, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 4
+  speed: 8.5
   lifeTime: 1.5
   waveAmount: 0
   waveFrequency: 5
   spawnOnEndPrefab: {fileID: 2652059216277761868, guid: 7578bb85d91a1e04ea2371bbf68085fd, type: 3}
   flashColor: {r: 1, g: 0.48584908, b: 0.48584908, a: 1}
   targetRenderer: {fileID: 7755611743303479467}
+  speedCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &8346403198814237929
 GameObject:
   m_ObjectHideFlags: 0

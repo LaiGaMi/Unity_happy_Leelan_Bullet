@@ -28,6 +28,8 @@ public class ui_change_scenes : MonoBehaviour
 	// 按鈕呼叫
     public void ChangeScene()
     {
+		AAA_font.time = 0;
+		AAA_font.HPUPUP = 0;
         TransitionManager.Instance().Transition(sceneName, transitionSettings, loadDelay);
     }
 }

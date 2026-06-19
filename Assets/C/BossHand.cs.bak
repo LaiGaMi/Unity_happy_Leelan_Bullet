@@ -7,16 +7,22 @@ public class BossHand : MonoBehaviour
     public enum HandState { Attack, Defense }
     public HandState state;
 
-    private bool defenseEnabled;
+    // =========================
+    // ⭐ 單一狀態開關（重點）
+    // true = 攻擊 / false = 防禦
+    // =========================
     private bool attackEnabled;
 
+    // =========================
+    // ⭐ 防禦設定
+    // =========================
     [Header("血量")]
     public int hp = 30;
 
     [Header("防禦特效")]
     public GameObject defenseEffect;
 
-    [Header("死亡特效")]
+    [Header("消滅特效")]
     public GameObject deathEffect;
 
     [Header("冷卻重啟時間")]
@@ -24,13 +30,56 @@ public class BossHand : MonoBehaviour
 
     private GameObject boss;
     private BoxCollider2D box;
+
+    // =========================
+    // ⭐ 攻擊設定（保留全部）
+    // =========================
+    [Header("攻擊1物件")]
+    public GameObject attack1Prefab;
+
+    [Header("攻擊2物件")]
+    public GameObject attack2Prefab;
+
+    [Header("攻擊3物件")]
+    public GameObject attack3Prefab;
+
+    [Header("等待時間")]
+    public float attackWaitTime = 3f;
+
+    [Header("第三攻擊生成間隔")]
+    public float attack3Interval = 0.1f;
+
+    [Header("移動速度")]
+    public float moveSpeed = 5f;
+
+    [Header("隨機範圍")]
+    public float playerRadius = 2f;
+    public float bossRadius = 2f;
+	
+	[Header("Attack1內圈半徑(禁止區)")]
+    public float attack1MinRadius = 1f;
+
+    [Header("Attack1外圈半徑(最大範圍)")]
+    public float attack1MaxRadius = 4f;
+
+    [Header("攝影機內縮")]
+    public float cameraInset = 1f;
+	
+	[Header("Attack1旋轉時間(秒)")]
+    public float attack1RotateTime = 1f;
+
+    [Header("Attack1旋轉圈數")]
+    public float attack1RotateTurns = 1f;
+
+    [Header("Attack1發射數量")]
+    public int attack1FireCount = 10;
+
     private Camera cam;
     private Transform player;
 
-    // attack control
-    private Coroutine attackRoutine;
-
     private int lastAttack = -1;
+
+    private Coroutine attackRoutine;
 
     void Awake()
     {
@@ -44,19 +93,21 @@ public class BossHand : MonoBehaviour
 
     void Update()
     {
-        if (defenseEnabled && boss != null)
+        // ⭐ 攻擊=不貼身 / 防禦=貼身
+        if (!attackEnabled && boss != null)
+        {
             transform.position = boss.transform.position;
+        }
     }
 
-    // =========================
-    // ⭐ 攻擊（修正：不再用 string Stop）
-    // =========================
+    // =========================================================
+    // ⭐ 攻擊模式
+    // =========================================================
     public void SetAttack()
     {
         state = HandState.Attack;
 
         attackEnabled = true;
-        defenseEnabled = false;
 
         if (defenseEffect != null)
             defenseEffect.SetActive(false);
@@ -82,7 +133,10 @@ public class BossHand : MonoBehaviour
     int GetRandomAttack()
     {
         int r;
-        do { r = Random.Range(0, 3); }
+        do
+        {
+            r = Random.Range(0, 3);
+        }
         while (r == lastAttack);
 
         lastAttack = r;
@@ -103,38 +157,114 @@ public class BossHand : MonoBehaviour
     {
         if (player == null) yield break;
 
-        Vector2 target = (Vector2)player.position + Random.insideUnitCircle * 2f;
+        Vector2 dir = Random.insideUnitCircle.normalized;
+
+        float radius = Random.Range(attack1MinRadius, attack1MaxRadius);
+
+        Vector2 target =
+            (Vector2)player.position + dir * radius;
+
         yield return MoveTo(target);
 
-        yield return new WaitForSeconds(0.1f);
+        float startZ = 0f;
+        transform.rotation = Quaternion.Euler(0, 0, startZ);
+
+        float timer = 0f;
+        float interval = attack1RotateTime / attack1FireCount;
+        float totalRotation = 360f * attack1RotateTurns;
+
+        int fired = 0;
+		
+		yield return new WaitForSeconds(1);
+		
+        while (timer < attack1RotateTime)
+        {
+            timer += Time.deltaTime;
+
+            float t = timer / attack1RotateTime;
+            float angle = Mathf.Lerp(0f, totalRotation, t);
+
+            transform.rotation = Quaternion.Euler(0, 0, angle);
+
+            if (fired < attack1FireCount && timer >= interval * fired)
+            {
+                if (attack1Prefab != null)
+                {
+                    Instantiate(
+                        attack1Prefab,
+                        transform.position,
+                        transform.rotation
+                    );
+                }
+
+                fired++;
+            }
+
+            yield return null;
+        }
+
+        transform.rotation = Quaternion.Euler(0, 0, 0);
+
+        // =========================
+        // ⭐ 修改處 END
+        // =========================
+
+        yield return new WaitForSeconds(attackWaitTime);
     }
 
     IEnumerator AttackType2()
     {
-        if (player == null || boss == null) yield break;
+        if (boss == null || player == null) yield break;
 
-        Vector2 target = boss.transform.position;
+        Vector2 target = (Vector2)boss.transform.position +
+                         Random.insideUnitCircle * bossRadius;
+
         yield return MoveTo(target);
 
-        yield return new WaitForSeconds(0.1f);
+        Vector2 dir = (player.position - transform.position).normalized;
+        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+
+        if (attack2Prefab != null)
+            Instantiate(attack2Prefab, transform.position,
+                Quaternion.Euler(0, 0, angle));
+
+        yield return new WaitForSeconds(attackWaitTime);
     }
 
     IEnumerator AttackType3()
     {
-        if (player == null) yield break;
+        if (cam == null || player == null) yield break;
 
+        Vector3 target = GetEdgePoint();
+
+        yield return MoveTo(target);
+
+        float timer = 0f;
         Vector2 dir = (player.position - transform.position).normalized;
 
-        float time = 0f;
-
-        while (time < 2f)
+        while (IsInScreen())
         {
-            transform.position += (Vector3)dir * 5f * Time.deltaTime;
-            time += Time.deltaTime;
+            timer += Time.deltaTime;
+
+            if (timer >= attack3Interval)
+            {
+                timer = 0f;
+
+                if (attack3Prefab != null)
+                    Instantiate(attack3Prefab,
+                        transform.position,
+                        Quaternion.Euler(0, 0,
+                            Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg));
+            }
+
+            transform.position += (Vector3)dir * moveSpeed * 2 * Time.deltaTime;
             yield return null;
         }
 
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(1.5f);
+
+        if (boss != null)
+            transform.position = boss.transform.position;
     }
 
     IEnumerator MoveTo(Vector2 target)
@@ -144,16 +274,37 @@ public class BossHand : MonoBehaviour
             transform.position = Vector2.MoveTowards(
                 transform.position,
                 target,
-                5f * Time.deltaTime
+                moveSpeed * Time.deltaTime
             );
 
             yield return null;
         }
     }
 
-    // =========================
-    // ⭐ 防禦（修正關鍵）
-    // =========================
+    Vector3 GetEdgePoint()
+    {
+        float h = cam.orthographicSize;
+        float w = h * cam.aspect;
+
+        Vector3 c = cam.transform.position;
+
+        bool top = Random.value > 0.5f;
+
+        float x = c.x + w - cameraInset;
+        float y = top ? (c.y + h - cameraInset) : (c.y - h + cameraInset);
+
+        return new Vector3(x, y, transform.position.z);
+    }
+
+    bool IsInScreen()
+    {
+        Vector3 vp = cam.WorldToViewportPoint(transform.position);
+        return vp.x >= 0 && vp.x <= 1 && vp.y >= 0 && vp.y <= 1;
+    }
+
+    // =========================================================
+    // ⭐ 防禦（單開關版本）
+    // =========================================================
     public void SetDefense()
     {
         state = HandState.Defense;
@@ -166,8 +317,6 @@ public class BossHand : MonoBehaviour
             attackRoutine = null;
         }
 
-        defenseEnabled = true;
-
         hp = 30;
 
         if (defenseEffect != null)
@@ -179,10 +328,13 @@ public class BossHand : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!defenseEnabled) return;
-        if (!other.CompareTag("player_attack")) return;
+        if (attackEnabled) return; // ⭐ 攻擊時不吃傷
+
+        if (!other.CompareTag("player_attack"))
+            return;
 
         hp--;
+
         Destroy(other.gameObject);
 
         if (hp <= 0)
@@ -193,14 +345,10 @@ public class BossHand : MonoBehaviour
 
     IEnumerator DieAndRespawn()
     {
-        defenseEnabled = false;
         attackEnabled = false;
 
         if (attackRoutine != null)
-        {
             StopCoroutine(attackRoutine);
-            attackRoutine = null;
-        }
 
         if (defenseEffect != null)
             defenseEffect.SetActive(false);

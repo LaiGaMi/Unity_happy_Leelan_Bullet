@@ -23,6 +23,12 @@ public class Level : MonoBehaviour
 
     public float loadDelay = 0f;
 	
+	[Header("回血道具Prefab")]
+    public GameObject healItemPrefab;
+
+    [Header("回血道具生成位置")]
+    public Transform healSpawnPoint;
+	
     // Start is called before the first frame update
     void Start()
     {
@@ -55,6 +61,18 @@ public class Level : MonoBehaviour
             spawnPoint.position,
             Quaternion.identity
         );
+
+        int waveNumber = currentWaveIndex + 1;
+
+        if (healItemPrefab != null &&
+            waveNumber == 6)
+        {
+            Vector3 pos = healSpawnPoint != null
+                ? healSpawnPoint.position
+                : spawnPoint.position;
+
+            Instantiate(healItemPrefab, pos, Quaternion.identity);
+        }
 
         currentWaveIndex++;
     }

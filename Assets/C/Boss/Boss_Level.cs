@@ -1,0 +1,169 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using EasyTransition;
+
+public class Boss_Level : MonoBehaviour
+{
+    // =========================
+    // ⭐ Boss存在清單（用來判斷是否死亡）
+    // =========================
+    [Header("Boss檢測清單（對應各階段）")]
+    public List<GameObject> bossList = new List<GameObject>();
+
+    // =========================
+    // ⭐ 階段物件清單（控制顯示/啟用）
+    // =========================
+    [Header("階段物件清單（對應各階段）")]
+    public List<GameObject> phaseList = new List<GameObject>();
+
+    // =========================
+    // ⭐ 當前階段
+    // =========================
+    [Header("當前階段")]
+    public int phaseIndex = 0;
+
+    // =========================
+    // ⭐ UI（手動綁定）
+    // =========================
+    [Header("Boss血量UI")]
+    public Image bossHpFill;
+
+    // =========================
+    // ⭐ 階段切換延遲
+    // =========================
+    [Header("階段切換等待時間")]
+    public float phaseSwitchDelay = 1f;
+
+    public string sceneName;
+    public TransitionSettings transitionSettings;
+    public float loadDelay = 0f;
+	public string sceneName2;
+
+    private int maxBossHp;
+    private int currentBossHp;
+    private bool isSwitching;
+
+    private void Start()
+    {
+        maxBossHp = CalculateTotalHp(0, bossList.Count - 1);
+        ApplyPhaseState();
+        UpdateHpUI();
+    }
+
+    private void Update()
+    {
+        CheckPhase();
+        UpdateHpUI();
+    }
+
+    // =========================================================
+    // ⭐ HP 計算：從指定範圍加總 Ent_HP.hp
+    // =========================================================
+    int CalculateTotalHp(int startIndex, int endIndex)
+    {
+        int sum = 0;
+
+        for (int i = startIndex; i <= endIndex; i++)
+        {
+            if (i < 0 || i >= bossList.Count) continue;
+
+            GameObject boss = bossList[i];
+            if (boss == null) continue;
+
+            Ent_HP hp = boss.GetComponentInChildren<Ent_HP>();
+            if (hp != null)
+            {
+                sum += hp.hp;
+            }
+        }
+
+        return sum;
+    }
+
+    // =========================================================
+    // ⭐ UI更新
+    // =========================================================
+    void UpdateHpUI()
+    {
+        if (bossHpFill == null) return;
+
+        currentBossHp = CalculateTotalHp(phaseIndex, bossList.Count - 1);
+
+        float value = (maxBossHp <= 0) ? 0f : (float)currentBossHp / maxBossHp;
+        bossHpFill.fillAmount = value;
+    }
+
+    // =========================================================
+    // ⭐ 階段檢測核心
+    // =========================================================
+    void CheckPhase()
+    {
+        if (isSwitching) return;
+
+        if (phaseIndex < 0) return;
+        if (phaseIndex >= bossList.Count) return;
+
+        GameObject currentBoss = bossList[phaseIndex];
+
+        if (currentBoss == null)
+        {
+            int nextIndex = phaseIndex + 1;
+
+            if (nextIndex < phaseList.Count)
+            {
+                StartCoroutine(SwitchPhase(nextIndex));
+            }
+            else
+            {
+				if (phaseIndex < phaseList.Count && phaseList[phaseIndex] != null)
+           		phaseList[phaseIndex].SetActive(false);
+                EndGame();
+            }
+        }
+    }
+
+    IEnumerator SwitchPhase(int nextIndex)
+    {
+        isSwitching = true;
+		
+		if (phaseIndex < phaseList.Count && phaseList[phaseIndex] != null)
+           phaseList[phaseIndex].SetActive(false);
+
+        yield return new WaitForSeconds(phaseSwitchDelay);
+
+        phaseIndex = nextIndex;
+
+        if (phaseIndex < phaseList.Count && phaseList[phaseIndex] != null)
+            phaseList[phaseIndex].SetActive(true);
+
+        UpdateHpUI();
+
+        isSwitching = false;
+    }
+
+    // =========================================================
+    // ⭐ 初始化階段狀態
+    // =========================================================
+    void ApplyPhaseState()
+    {
+        for (int i = 0; i < phaseList.Count; i++)
+        {
+            if (phaseList[i] != null)
+                phaseList[i].SetActive(i == phaseIndex);
+        }
+    }
+
+    void EndGame()
+    {
+		if (AAA_font.HPUPUP == 0 && sceneName2 != null)
+		{
+			TransitionManager.Instance().Transition(sceneName2, transitionSettings, loadDelay);
+		}
+		else
+		{
+			TransitionManager.Instance().Transition(sceneName, transitionSettings, loadDelay);
+		}
+    }
+}

@@ -18,9 +18,15 @@ public class Ent_Attack : MonoBehaviour
 
     private Transform player;
 	
+	private AudioSource AttSource;
+	
+	public bool AttSo = true ;
+	
     // Start is called before the first frame update
     void Start()
     {
+		AttSource = GetComponent<AudioSource>();
+		
         // 自動尋找場景中的 Player
         GameObject playerObj = GameObject.Find("Player");
         if (playerObj != null)
@@ -43,13 +49,22 @@ public class Ent_Attack : MonoBehaviour
 
         while (true)
         {
-            SpawnAttack();
+			if (AttSo)
+			{
+				SpawnAttack();
+			}
+            else
+			{
+				SpawnAttack2();
+			}
             yield return new WaitForSeconds(attackInterval);
         }
     }
 
     void SpawnAttack()
     {
+		StartCoroutine(PlayRoutine());
+		
         if (attackPrefab == null) return;
 
         Vector3 spawnPos = firePoint != null ? firePoint.position : transform.position;
@@ -68,5 +83,25 @@ public class Ent_Attack : MonoBehaviour
         }
 
         Instantiate(attackPrefab, spawnPos, rotation);
+    }
+	
+	void SpawnAttack2()
+    {
+		StartCoroutine(PlayRoutine());
+		
+        if (attackPrefab == null) return;
+		
+		Vector3 spawnPos = firePoint != null ? firePoint.position : transform.position;
+
+        Instantiate(attackPrefab, spawnPos, transform.rotation);
+    }
+	
+	IEnumerator PlayRoutine()
+    {
+        float delay = Random.Range(0.0f, 0.1f);
+        yield return new WaitForSeconds(delay);
+
+        if (AttSource != null)
+            AttSource.Play();
     }
 }

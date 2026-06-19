@@ -1,0 +1,117 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Boss_hand_BO : MonoBehaviour
+{
+    public enum HandState { Defense }
+    public HandState state;
+
+    // =========================
+    // ⭐ 防禦設定
+    // =========================
+    [Header("血量")]
+    public int hp = 30;
+
+    [Header("防禦特效")]
+    public GameObject defenseEffect;
+
+    [Header("消滅特效")]
+    public GameObject deathEffect;
+
+    [Header("冷卻重啟時間")]
+    public float reviveTime = 10f;
+
+    [Header("跟隨目標")]
+    public Transform followTarget;
+
+    [Header("跟隨偏移")]
+    public Vector3 followOffset;
+
+    [Header("跟隨速度")]
+    public float followSpeed = 15f;
+
+    private BoxCollider2D box;
+
+    private bool isDead;
+
+    void Awake()
+    {
+        box = GetComponent<BoxCollider2D>();
+    }
+
+    void Start()
+    {
+        SetDefense();
+    }
+
+    void Update()
+    {
+        HandleFollow();
+    }
+
+    // =========================
+    // ⭐ 跟隨邏輯
+    // =========================
+    void HandleFollow()
+    {
+        if (followTarget == null) return;
+
+        transform.position = Vector3.Lerp(
+            transform.position,
+            followTarget.position + followOffset,
+            followSpeed * Time.deltaTime
+        );
+    }
+
+    // =========================================================
+    // ⭐ 防禦模式（循環核心）
+    // =========================================================
+    public void SetDefense()
+    {
+        state = HandState.Defense;
+
+        hp = 30;
+        isDead = false;
+
+        if (defenseEffect != null)
+            defenseEffect.SetActive(true);
+
+        if (box != null)
+            box.enabled = true;
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (isDead) return;
+
+        if (!other.CompareTag("player_attack"))
+            return;
+
+        hp--;
+        Destroy(other.gameObject);
+
+        if (hp <= 0)
+        {
+            StartCoroutine(DieAndRespawn());
+        }
+    }
+
+    IEnumerator DieAndRespawn()
+    {
+        isDead = true;
+
+        if (box != null)
+            box.enabled = false;
+
+        if (defenseEffect != null)
+            defenseEffect.SetActive(false);
+
+        if (deathEffect != null)
+            Instantiate(deathEffect, transform.position, Quaternion.identity);
+
+        yield return new WaitForSeconds(reviveTime);
+
+        SetDefense();
+    }
+}

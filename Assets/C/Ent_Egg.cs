@@ -4,8 +4,7 @@ using UnityEngine;
 
 public class Ent_Egg : MonoBehaviour
 {
-	
-	[Header("前進速度")]
+    [Header("前進速度")]
     public float speed = 10f;
 
     [Header("存在時間（0 = 永久）")]
@@ -24,22 +23,26 @@ public class Ent_Egg : MonoBehaviour
     public Color flashColor = Color.red;
 
     [Header("圖像物件（SpriteRenderer）")]
-    public SpriteRenderer targetRenderer; // ⭐新增
+    public SpriteRenderer targetRenderer;
+
+    // =========================
+    // ⭐ 修改：減速曲線控制
+    // =========================
+    [Header("速度衰減曲線（0~1）")]
+    public AnimationCurve speedCurve = AnimationCurve.EaseInOut(0, 1, 1, 0);
 
     private float timer;
     private bool ended;
     private bool colorToggle;
 
     private Color originalColor;
-	
-    // Start is called before the first frame update
+
     void Start()
     {
         if (targetRenderer != null)
             originalColor = targetRenderer.color;
     }
 
-    // Update is called once per frame
     void Update()
     {
         timer += Time.deltaTime;
@@ -50,10 +53,21 @@ public class Ent_Egg : MonoBehaviour
         HandleLifeTime();
         HandleColorFlash();
     }
-	
-	void MoveForward()
+
+    void MoveForward()
     {
-        transform.position += transform.right * speed * Time.deltaTime;
+        float currentSpeed = speed;
+
+        // =========================
+        // ⭐ 修改：生命週期內曲線減速
+        // =========================
+        if (lifeTime > 0f && spawnOnEndPrefab != null)
+        {
+            float t = Mathf.Clamp01(timer / lifeTime);
+            currentSpeed = speed * speedCurve.Evaluate(t);
+        }
+
+        transform.position += transform.right * currentSpeed * Time.deltaTime;
     }
 
     void ApplyWave()
@@ -86,7 +100,6 @@ public class Ent_Egg : MonoBehaviour
         if (lifeTime <= 0f || targetRenderer == null) return;
 
         float cycle = Mathf.Floor(timer / 0.2f);
-
         bool state = cycle % 2 == 0;
 
         targetRenderer.color = state ? flashColor : originalColor;

@@ -18,20 +18,25 @@ public class Player_HP : MonoBehaviour
     [Header("受傷顏色透明度")]
     public float hurtAlpha = 192f;
 
+    [Header("旋轉一圈")]
+    public float hurtRotateAmount = 360f;
+
     [Header("死亡特效")]
     public GameObject deathEffectPrefab; // ⭐保留擴充用
 
     private SpriteRenderer sr;
     private bool canBeHit = true;
     private Color originalColor;
-	
+
+    private Coroutine hurtRoutine;
+
 	// 場景名稱
     public string sceneName;
-    // 改成拖這個
     public TransitionSettings transitionSettings;
 	public float loadDelay = 0f;
-	
-    // Start is called before the first frame update
+
+	public GameObject HPEffectPrefab;
+
     void Start()
     {
         sr = GetComponent<SpriteRenderer>();
@@ -42,32 +47,32 @@ public class Player_HP : MonoBehaviour
         UpdateUI();
     }
 
-    // Update is called once per frame
-    void Update()
+    private void OnTriggerEnter2D(Collider2D other)
     {
-        
-    }
-	
-	private void OnTriggerEnter2D(Collider2D other)
-    {
+		if (other.CompareTag("HPUP"))
+        {
+			AAA_font.HPUPUP += 1;
+            Destroy(other.gameObject);
+            hp = 100;
+            UpdateUI();
+        }
+		
         if (!canBeHit) return;
 
         if (other.CompareTag("Ent_Attack") || other.CompareTag("Ent_Attack_NO"))
         {
             TakeDamage(5);
 
-            // Ent_Attack 才刪除
             if (other.CompareTag("Ent_Attack"))
-            {
                 Destroy(other.gameObject);
-            }
 
-            StartCoroutine(HurtCooldown());
+            if (hurtRoutine != null)
+                StopCoroutine(hurtRoutine);
+
+            hurtRoutine = StartCoroutine(HurtCooldown());
 
             if (hp <= 0)
-            {
                 Die();
-            }
         }
     }
 
@@ -82,48 +87,62 @@ public class Player_HP : MonoBehaviour
     void UpdateUI()
     {
         if (hpBar != null)
-        {
             hpBar.fillAmount = hp / 100f;
-        }
     }
 
     IEnumerator HurtCooldown()
     {
         canBeHit = false;
 
-        // ⭐變透明（192 / 255）
+        float timer = 0f;
+        float startZ = transform.eulerAngles.z;
+
+        Color hitColor = sr != null ? sr.color : Color.white;
         if (sr != null)
         {
-            Color c = sr.color;
-            c.a = hurtAlpha / 255f;
-            sr.color = c;
+            hitColor.a = hurtAlpha / 255f;
+            sr.color = hitColor;
         }
 
-        yield return new WaitForSeconds(hurtCooldown);
+        while (timer < hurtCooldown)
+        {
+            timer += Time.deltaTime;
+
+            float t = timer / hurtCooldown;
+
+            // 曲線 easing（先快後慢）
+            float curve = 1f - Mathf.Pow(1f - t, 3f);
+
+            float angle = Mathf.Lerp(
+                startZ,
+                startZ + hurtRotateAmount,
+                curve
+            );
+
+            transform.rotation = Quaternion.Euler(0f, 0f, angle);
+
+            yield return null;
+        }
 
         // 恢復
         if (sr != null)
-        {
             sr.color = originalColor;
-        }
+
+        transform.rotation = Quaternion.Euler(0f, 0f, startZ);
 
         canBeHit = true;
     }
 
     void Die()
     {
-        // ⭐死亡特效（保留擴充）
         if (deathEffectPrefab != null)
-        {
             Instantiate(deathEffectPrefab, transform.position, Quaternion.identity);
-        }
-		
-		EndGame();
 
+        EndGame();
         Destroy(gameObject);
     }
-	
-	void EndGame()
+
+    void EndGame()
     {
         TransitionManager.Instance().Transition(sceneName, transitionSettings, loadDelay);
     }

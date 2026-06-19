@@ -25,6 +25,9 @@ public class Ent_Egg : MonoBehaviour
 
     [Header("圖像物件（SpriteRenderer）")]
     public SpriteRenderer targetRenderer; // ⭐新增
+	
+	[Header("速度衰減曲線（0~1）")]
+    public AnimationCurve speedCurve = AnimationCurve.EaseInOut(0, 1, 1, 0);
 
     private float timer;
     private bool ended;
@@ -85,7 +88,7 @@ public class Ent_Egg : MonoBehaviour
     {
         if (lifeTime <= 0f || targetRenderer == null) return;
 
-        float cycle = Mathf.Floor(timer / 0.1f);
+        float cycle = Mathf.Floor(timer / 0.2f);
 
         bool state = cycle % 2 == 0;
 

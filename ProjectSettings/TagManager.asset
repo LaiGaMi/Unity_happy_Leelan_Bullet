@@ -10,6 +10,7 @@ TagManager:
   - Laser
   - Enemy
   - Boss_Spawn
+  - HPUP
   layers:
   - Default
   - TransparentFX
