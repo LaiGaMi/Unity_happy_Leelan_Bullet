@@ -11,6 +11,7 @@ TagManager:
   - Enemy
   - Boss_Spawn
   - HPUP
+  - ATTNO
   layers:
   - Default
   - TransparentFX

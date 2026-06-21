@@ -1,0 +1,95 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Lee_Move1 : MonoBehaviour
+{
+    [Header("移動半徑")]
+    public float radius = 1f;
+
+    [Header("移動時間 A")]
+    public float moveTime = 1f;
+
+    [Header("等待時間 B")]
+    public float waitTime = 1f;
+
+    [Header("縮放週期 C")]
+    public float scaleCycle = 2f;
+
+    [Header("最大縮放 D")]
+    public float maxScale = 1.5f;
+
+    [Header("縮放曲線")]
+    public AnimationCurve curve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+
+    private Vector3 startLocalPos;
+    private Vector3 startLocalScale;
+
+    private Transform cachedTransform;
+
+    void Start()
+    {
+        cachedTransform = transform;
+
+        // ⭐ 以「本地座標」為基準
+        startLocalPos = cachedTransform.localPosition;
+        startLocalScale = cachedTransform.localScale;
+
+        StartCoroutine(MoveLoop());
+        StartCoroutine(ScaleLoop());
+    }
+
+    IEnumerator MoveLoop()
+    {
+        while (true)
+        {
+            Vector2 randomOffset = Random.insideUnitCircle * radius;
+            Vector3 targetLocalPos = startLocalPos + new Vector3(randomOffset.x, randomOffset.y, 0);
+
+            Vector3 from = cachedTransform.localPosition;
+
+            float t = 0f;
+
+            while (t < moveTime)
+            {
+                t += Time.deltaTime;
+
+                float k = curve.Evaluate(Mathf.Clamp01(t / moveTime));
+
+                cachedTransform.localPosition = Vector3.Lerp(from, targetLocalPos, k);
+
+                yield return null;
+            }
+
+            cachedTransform.localPosition = targetLocalPos;
+
+            yield return new WaitForSeconds(waitTime);
+        }
+    }
+
+    IEnumerator ScaleLoop()
+    {
+        while (true)
+        {
+            float t = 0f;
+
+            while (t < scaleCycle)
+            {
+                t += Time.deltaTime;
+
+                float k = curve.Evaluate(Mathf.Clamp01(t / scaleCycle));
+
+                float scaleValue = Mathf.Lerp(1f, maxScale, k);
+
+                cachedTransform.localScale = startLocalScale * scaleValue;
+
+                yield return null;
+            }
+
+            // 回到基準縮放
+            cachedTransform.localScale = startLocalScale;
+
+            yield return null;
+        }
+    }
+}

@@ -1,0 +1,112 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class RandomAttackController : MonoBehaviour
+{
+    [Header("攻擊組1")]
+    public List<GameObject> attackGroup1 = new List<GameObject>();
+
+    [Header("攻擊組2")]
+    public List<GameObject> attackGroup2 = new List<GameObject>();
+
+    [Header("攻擊組3")]
+    public List<GameObject> attackGroup3 = new List<GameObject>();
+
+    [Header("攻擊生成位置")]
+    public Transform spawnPoint;
+
+    [Header("首次等待時間")]
+    public float firstDelay = 1f;
+
+    [Header("下一輪等待時間")]
+    public float loopDelay = 2f;
+
+    private Transform player;
+
+    private void Start()
+    {
+        GameObject p = GameObject.Find("Player");
+
+        if (p != null)
+            player = p.transform;
+
+        StartCoroutine(AttackLoop());
+    }
+
+    IEnumerator AttackLoop()
+    {
+        yield return new WaitForSeconds(firstDelay);
+
+        while (true)
+        {
+            SpawnAttack();
+
+            yield return new WaitUntil(() => spawnPoint.childCount == 0);
+
+            yield return new WaitForSeconds(loopDelay);
+        }
+    }
+
+    void SpawnAttack()
+    {
+        List<List<GameObject>> groups = new List<List<GameObject>>()
+        {
+            attackGroup1,
+            attackGroup2,
+            attackGroup3
+        };
+
+        int firstIndex = Random.Range(0, groups.Count);
+
+        int secondIndex;
+
+        do
+        {
+            secondIndex = Random.Range(0, groups.Count);
+        }
+        while (secondIndex == firstIndex);
+
+        List<GameObject> groupA = groups[firstIndex];
+        List<GameObject> groupB = groups[secondIndex];
+
+        if (groupA.Count < 2) return;
+        if (groupB.Count < 2) return;
+        if (spawnPoint == null) return;
+
+        // 第一個攻擊使用第0項
+        GameObject attackA = Instantiate(
+            groupA[0],
+            spawnPoint.position,
+            Quaternion.identity,
+            spawnPoint
+        );
+
+        LookAtPlayer(attackA);
+
+        // 第二個攻擊使用第1項
+        GameObject attackB = Instantiate(
+            groupB[1],
+            spawnPoint.position,
+            Quaternion.identity,
+            spawnPoint
+        );
+
+        LookAtPlayer(attackB);
+    }
+
+    void LookAtPlayer(GameObject obj)
+    {
+        if (obj == null) return;
+        if (player == null) return;
+
+        Vector2 dir =
+            (player.position - obj.transform.position).normalized;
+
+        float angle =
+            Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+
+        obj.transform.rotation =
+            Quaternion.Euler(0, 0, angle);
+    }
+}

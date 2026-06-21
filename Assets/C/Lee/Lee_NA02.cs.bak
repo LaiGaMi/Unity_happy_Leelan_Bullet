@@ -1,0 +1,66 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Lee_NA02 : MonoBehaviour
+{
+    [Header("爆炸物件")]
+    public GameObject explosionPrefab;
+
+    private Camera cam;
+    private bool triggered;
+
+    void Start()
+    {
+        cam = Camera.main;
+    }
+
+    void Update()
+    {
+        if (triggered) return;
+        if (cam == null) return;
+
+        Vector3 vp = cam.WorldToViewportPoint(transform.position);
+
+        bool hitEdge =
+            vp.x <= 0f || vp.x >= 1f ||
+            vp.y <= 0f || vp.y >= 1f;
+
+        if (hitEdge)
+        {
+            triggered = true;
+            SpawnExplosion();
+        }
+    }
+
+    void SpawnExplosion()
+    {
+        if (explosionPrefab == null || cam == null)
+            return;
+
+        Vector3 pos = transform.position;
+
+        // 判斷最近邊界方向（用 viewport 位置推回內側方向）
+        Vector3 vp = cam.WorldToViewportPoint(pos);
+
+        Vector2 inwardDir = Vector2.zero;
+
+        // 左右邊界
+        if (vp.x <= 0f) inwardDir = Vector2.right;
+        else if (vp.x >= 1f) inwardDir = Vector2.left;
+
+        // 上下邊界
+        else if (vp.y <= 0f) inwardDir = Vector2.up;
+        else if (vp.y >= 1f) inwardDir = Vector2.down;
+
+        float angle = Mathf.Atan2(inwardDir.y, inwardDir.x) * Mathf.Rad2Deg;
+
+        Instantiate(
+            explosionPrefab,
+            pos,
+            Quaternion.Euler(0, 0, angle)
+        );
+
+        Destroy(gameObject);
+    }
+}

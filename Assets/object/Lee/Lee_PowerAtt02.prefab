@@ -4912,7 +4912,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 127286307dba057498a61257d04051bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  destroyTime: 5
+  destroyTime: 1
   spawnBeforeDestroy: {fileID: 0}
 --- !u!114 &7902237396408732426
 MonoBehaviour:

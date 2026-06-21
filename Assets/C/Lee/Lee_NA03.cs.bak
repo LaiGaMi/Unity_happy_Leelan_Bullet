@@ -1,0 +1,95 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Lee_NA03 : MonoBehaviour
+{
+    [Header("前進速度")]
+    public float speed = 10f;
+
+    [Header("存在時間（0 = 永久）")]
+    public float lifeTime = 0f;
+
+    [Header("左右擺動幅度（0 = 無）")]
+    public float waveAmount = 0f;
+
+    [Header("擺動頻率")]
+    public float waveFrequency = 5f;
+
+    [Header("速度衰減曲線（0~1）")]
+    public AnimationCurve speedCurve = AnimationCurve.EaseInOut(0, 1, 1, 0);
+
+    private float timer;
+    private bool reverseMove;
+
+    // ⭐ 新增：進入反轉曲線狀態
+    private bool reverseCurvePhase;
+    private float reverseTimer;
+
+    void Update()
+    {
+        timer += Time.deltaTime;
+
+        HandleLifeState();
+        MoveForward();
+        ApplyWave();
+    }
+
+    void HandleLifeState()
+    {
+        if (lifeTime <= 0f) return;
+
+        // 正常時間到 → 進入反轉曲線階段
+        if (!reverseMove && timer >= lifeTime)
+        {
+            reverseMove = true;
+            reverseCurvePhase = true;
+            reverseTimer = 0f;
+        }
+    }
+
+    void MoveForward()
+    {
+        float currentSpeed = speed;
+
+        // =========================
+        // ⭐ 正常階段：速度曲線衰減（0 → speed）
+        // =========================
+        if (!reverseCurvePhase)
+        {
+            if (lifeTime > 0f)
+            {
+                float t = Mathf.Clamp01(timer / lifeTime);
+                currentSpeed = speed * speedCurve.Evaluate(t);
+            }
+        }
+        // =========================
+        // ⭐ 反轉階段：0 → -speed（曲線）
+        // =========================
+        else
+        {
+            reverseTimer += Time.deltaTime;
+
+            float t = Mathf.Clamp01(reverseTimer / lifeTime);
+            float curveValue = speedCurve.Evaluate(t);
+
+            currentSpeed = -speed * curveValue;
+
+            // ⭐ 小於0後不再管時間（永久反向移動）
+            if (currentSpeed < 0f)
+            {
+                reverseCurvePhase = false; // 停止時間控制
+            }
+        }
+
+        transform.position += transform.right * currentSpeed * Time.deltaTime;
+    }
+
+    void ApplyWave()
+    {
+        if (waveAmount == 0f) return;
+
+        float wave = Mathf.Sin(timer * waveFrequency) * waveAmount;
+        transform.position += transform.up * wave * Time.deltaTime;
+    }
+}
