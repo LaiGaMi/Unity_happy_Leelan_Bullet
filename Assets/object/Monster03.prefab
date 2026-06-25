@@ -203,7 +203,7 @@ AudioSource:
   m_audioClip: {fileID: 8300000, guid: 616b2ecce8b1b8b429ee31789321c671, type: 3}
   m_Resource: {fileID: 8300000, guid: 616b2ecce8b1b8b429ee31789321c671, type: 3}
   m_PlayOnAwake: 0
-  m_Volume: 1
+  m_Volume: 0.5
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -332,3 +332,4 @@ MonoBehaviour:
   firePoint: {fileID: 37880697743520797}
   startDelay: 3
   attackInterval: 1.2
+  AttSo: 1

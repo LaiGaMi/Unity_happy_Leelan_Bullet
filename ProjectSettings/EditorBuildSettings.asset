@@ -9,13 +9,34 @@ EditorBuildSettings:
     path: Assets/Scenes/000.unity
     guid: e48a31680ca03304e9301636f2bc30f9
   - enabled: 1
+    path: Assets/Scenes/001start.unity
+    guid: 4ca79533308c06e41bd8f5258cc0e63b
+  - enabled: 1
+    path: Assets/Scenes/001talk.unity
+    guid: c21d47861fe104942bfd12b821856823
+  - enabled: 1
     path: Assets/Scenes/001.unity
     guid: 12a3e51f70880ad4fbea25fe96c95abf
+  - enabled: 1
+    path: Assets/Scenes/002start.unity
+    guid: ef6a7bc2a24607b4dbf7679dc00cca15
+  - enabled: 1
+    path: Assets/Scenes/002talk.unity
+    guid: 3c99a43a1e9bd63478948a3d99b4c864
   - enabled: 1
     path: Assets/Scenes/002.unity
     guid: 6909c7348908fdd48a968b396d4bb045
   - enabled: 1
+    path: Assets/Scenes/003start.unity
+    guid: 029ba9346a6eb5c43986ec6b284710f9
+  - enabled: 1
+    path: Assets/Scenes/003talk.unity
+    guid: ed1e07fc3de474b4cbdc98c3b47e5a59
+  - enabled: 1
     path: Assets/Scenes/003.unity
     guid: e505995bffdd2174685281c15ea71d55
+  - enabled: 1
+    path: Assets/Scenes/004.unity
+    guid: d68f4413cb3741b41982823943c6a7b0
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

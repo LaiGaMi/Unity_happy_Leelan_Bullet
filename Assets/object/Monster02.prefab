@@ -332,3 +332,4 @@ MonoBehaviour:
   firePoint: {fileID: 9181767276185071038}
   startDelay: 3
   attackInterval: 1
+  AttSo: 1

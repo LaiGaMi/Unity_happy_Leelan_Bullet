@@ -6,6 +6,7 @@ using EasyTransition;
 
 public class Boss_Level : MonoBehaviour
 {
+	public bool BBOS = false;
     // =========================
     // ⭐ Boss存在清單（用來判斷是否死亡）
     // =========================
@@ -157,6 +158,11 @@ public class Boss_Level : MonoBehaviour
 
     void EndGame()
     {
+		if(BBOS)
+		{
+			AAA_font.BBOS = true;
+		}
+		
 		if (AAA_font.HPUPUP == 0 && sceneName2 != null)
 		{
 			TransitionManager.Instance().Transition(sceneName2, transitionSettings, loadDelay);

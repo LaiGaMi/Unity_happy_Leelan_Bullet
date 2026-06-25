@@ -157,7 +157,7 @@ public class Boss_Level : MonoBehaviour
 
     void EndGame()
     {
-		if (AAA_font.HPUPUP == 0)
+		if (AAA_font.HPUPUP == 0 && sceneName2 != null)
 		{
 			TransitionManager.Instance().Transition(sceneName2, transitionSettings, loadDelay);
 		}

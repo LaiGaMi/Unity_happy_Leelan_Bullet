@@ -1,0 +1,28 @@
+using UnityEngine;
+using UnityEngine.Video;
+using System.IO;
+
+public class WebGLVideo : MonoBehaviour
+{
+    public VideoPlayer vp;
+
+    void Start()
+    {
+        // 取得 WebGL 可用的影片路徑
+        string url = Path.Combine(
+            Application.streamingAssetsPath,
+            "Animate01.mp4"
+        );
+
+        vp.source = VideoSource.Url;
+        vp.url = url;
+
+        vp.Prepare();
+        vp.prepareCompleted += OnReady;
+    }
+
+    void OnReady(VideoPlayer vp)
+    {
+        vp.Play();
+    }
+}

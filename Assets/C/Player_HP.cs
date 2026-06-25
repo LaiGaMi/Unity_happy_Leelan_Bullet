@@ -36,10 +36,12 @@ public class Player_HP : MonoBehaviour
 	public float loadDelay = 0f;
 
 	public GameObject HPEffectPrefab;
+	private AudioSource AttSource;
 
     void Start()
     {
         sr = GetComponent<SpriteRenderer>();
+		AttSource = GetComponent<AudioSource>();
 
         if (sr != null)
             originalColor = sr.color;
@@ -61,6 +63,8 @@ public class Player_HP : MonoBehaviour
 
         if (other.CompareTag("Ent_Attack") || other.CompareTag("Ent_Attack_NO"))
         {
+			AttSource.Play();
+			
             TakeDamage(5);
 
             if (other.CompareTag("Ent_Attack"))

@@ -49,6 +49,14 @@ public class Player_HP : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+		if (other.CompareTag("HPUP"))
+        {
+			AAA_font.HPUPUP += 1;
+            Destroy(other.gameObject);
+            hp = 100;
+            UpdateUI();
+        }
+		
         if (!canBeHit) return;
 
         if (other.CompareTag("Ent_Attack") || other.CompareTag("Ent_Attack_NO"))
@@ -65,14 +73,6 @@ public class Player_HP : MonoBehaviour
 
             if (hp <= 0)
                 Die();
-        }
-
-        if (other.CompareTag("HPUP"))
-        {
-			AAA_font.HPUPUP += 1;
-            Destroy(other.gameObject);
-            hp = 100;
-            UpdateUI();
         }
     }
 
